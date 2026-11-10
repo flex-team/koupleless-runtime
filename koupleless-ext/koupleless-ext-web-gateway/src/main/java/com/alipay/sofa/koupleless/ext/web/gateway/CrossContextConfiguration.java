@@ -21,8 +21,8 @@ import org.apache.catalina.Context;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
-import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.tomcat.TomcatContextCustomizer;
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -40,7 +40,7 @@ public class CrossContextConfiguration {
     /**
      * <p>tomcatCrossContextCustomizer.</p>
      *
-     * @return a {@link org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer} object
+     * @return a {@link org.springframework.boot.tomcat.TomcatContextCustomizer} object
      */
     @Bean
     @ConditionalOnClass(Context.class)
