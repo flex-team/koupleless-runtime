@@ -55,6 +55,8 @@ public class ApiClient implements ArkletComponent {
     // CUSTOM_BASE_METADATA_HOOK_CLASS is the key of class name of custom base metadata hook, used by tunnel to get metadata of base
     private final static String       CUSTOM_BASE_METADATA_HOOK_CLASS = "koupleless.arklet.custom.base.metadata.classname";
 
+    private final static String       HTTP_TUNNEL_ENABLE              = "koupleless.arklet.http.enable";
+
     @Inject
     private CommandService            commandService;
 
@@ -107,12 +109,14 @@ public class ApiClient implements ArkletComponent {
         return baseMetadataHook;
     }
 
-    private static class TunnelGuiceModule extends AbstractModule {
+    static class TunnelGuiceModule extends AbstractModule {
         @Override
         protected void configure() {
             Multibinder<Tunnel> tunnelMultibinder = Multibinder.newSetBinder(binder(),
                 Tunnel.class);
-            tunnelMultibinder.addBinding().to(HttpTunnel.class);
+            if (EnvironmentUtils.getProperty(HTTP_TUNNEL_ENABLE, "true").equalsIgnoreCase("true")) {
+                tunnelMultibinder.addBinding().to(HttpTunnel.class);
+            }
             String customTunnelClassName = EnvironmentUtils.getProperty(CUSTOM_TUNNEL_CLASS);
 
             if (customTunnelClassName != null && !customTunnelClassName.isEmpty()) {
