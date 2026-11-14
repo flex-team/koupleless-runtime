@@ -22,23 +22,28 @@ import com.alipay.sofa.ark.api.ResponseCode;
 import com.alipay.sofa.koupleless.arklet.core.ArkletComponentRegistry;
 import com.alipay.sofa.koupleless.arklet.core.common.model.BatchInstallRequest;
 import com.alipay.sofa.koupleless.arklet.core.common.model.BatchInstallResponse;
+import com.alipay.sofa.koupleless.arklet.core.ops.StaticBizArgsProvider;
 import com.alipay.sofa.koupleless.arklet.core.ops.UnifiedOperationService;
 import com.alipay.sofa.koupleless.common.util.ArkUtils;
 import lombok.SneakyThrows;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.support.GenericApplicationContext;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -104,7 +109,7 @@ public class StaticBatchInstallEventListenerTest {
         doReturn(response).when(operationService)
             .batchInstall(BatchInstallRequest.builder().bizDirAbsolutePath("/path/to/dir").build());
 
-        event = mock(ApplicationReadyEvent.class);
+        event = readyEvent(context());
         try (MockedStatic<ArkUtils> arkUtilsMockedStatic = Mockito.mockStatic(ArkUtils.class)) {
             arkUtilsMockedStatic.when(ArkUtils::isMasterBiz).thenReturn(true);
             arkletApplicationListener.onApplicationEvent(event);
@@ -143,7 +148,7 @@ public class StaticBatchInstallEventListenerTest {
         doReturn(response).when(operationService)
             .batchInstall(BatchInstallRequest.builder().bizDirAbsolutePath("/path/to/dir").build());
 
-        event = mock(ApplicationReadyEvent.class);
+        event = readyEvent(context());
         try (MockedStatic<ArkUtils> arkUtilsMockedStatic = Mockito.mockStatic(ArkUtils.class)) {
             arkUtilsMockedStatic.when(ArkUtils::isMasterBiz).thenReturn(true);
             arkletApplicationListener.onApplicationEvent(event);
@@ -152,4 +157,79 @@ public class StaticBatchInstallEventListenerTest {
         }
     }
 
+    @SneakyThrows
+    @Test
+    public void testBatchDeployPassesRegisteredArgsProvider() {
+        componentRegistryMockedStatic.when(ArkletComponentRegistry::getOperationServiceInstance)
+            .thenReturn(operationService);
+        doReturn(successResponse()).when(operationService)
+            .batchInstall(any(BatchInstallRequest.class));
+        StaticBizArgsProvider provider = (name, version, path) -> new String[] { "--biz=" + name };
+
+        try (MockedStatic<ArkUtils> arkUtilsMockedStatic = Mockito.mockStatic(ArkUtils.class)) {
+            arkUtilsMockedStatic.when(ArkUtils::isMasterBiz).thenReturn(true);
+            arkletApplicationListener.onApplicationEvent(readyEvent(context(provider)));
+        }
+
+        ArgumentCaptor<BatchInstallRequest> request = ArgumentCaptor
+            .forClass(BatchInstallRequest.class);
+        verify(operationService).batchInstall(request.capture());
+        Assert.assertEquals("/path/to/dir", request.getValue().getBizDirAbsolutePath());
+        Assert.assertSame(provider, request.getValue().getBizArgsProvider());
+    }
+
+    @SneakyThrows
+    @Test
+    public void testBatchDeployWithoutArgsProvider() {
+        componentRegistryMockedStatic.when(ArkletComponentRegistry::getOperationServiceInstance)
+            .thenReturn(operationService);
+        doReturn(successResponse()).when(operationService)
+            .batchInstall(any(BatchInstallRequest.class));
+
+        try (MockedStatic<ArkUtils> arkUtilsMockedStatic = Mockito.mockStatic(ArkUtils.class)) {
+            arkUtilsMockedStatic.when(ArkUtils::isMasterBiz).thenReturn(true);
+            arkletApplicationListener.onApplicationEvent(readyEvent(context()));
+        }
+
+        ArgumentCaptor<BatchInstallRequest> request = ArgumentCaptor
+            .forClass(BatchInstallRequest.class);
+        verify(operationService).batchInstall(request.capture());
+        Assert.assertNull(request.getValue().getBizArgsProvider());
+    }
+
+    @Test
+    public void testBatchDeployFailsOnAmbiguousArgsProviders() {
+        componentRegistryMockedStatic.when(ArkletComponentRegistry::getOperationServiceInstance)
+            .thenReturn(operationService);
+        StaticBizArgsProvider first = (name, version, path) -> new String[0];
+        StaticBizArgsProvider second = (name, version, path) -> new String[0];
+
+        try (MockedStatic<ArkUtils> arkUtilsMockedStatic = Mockito.mockStatic(ArkUtils.class)) {
+            arkUtilsMockedStatic.when(ArkUtils::isMasterBiz).thenReturn(true);
+            arkletApplicationListener.onApplicationEvent(readyEvent(context(first, second)));
+            Assert.fail("ambiguous args providers must fail the batch deploy");
+        } catch (NoUniqueBeanDefinitionException expected) {
+            verifyNoInteractions(operationService);
+        }
+    }
+
+    private static BatchInstallResponse successResponse() {
+        return BatchInstallResponse.builder().code(ResponseCode.SUCCESS)
+            .bizUrlToResponse(new HashMap<>()).build();
+    }
+
+    private static GenericApplicationContext context(StaticBizArgsProvider... providers) {
+        GenericApplicationContext context = new GenericApplicationContext();
+        for (int i = 0; i < providers.length; i++) {
+            context.getBeanFactory().registerSingleton("provider" + i, providers[i]);
+        }
+        context.refresh();
+        return context;
+    }
+
+    private static ApplicationReadyEvent readyEvent(ConfigurableApplicationContext context) {
+        ApplicationReadyEvent event = mock(ApplicationReadyEvent.class);
+        when(event.getApplicationContext()).thenReturn(context);
+        return event;
+    }
 }
