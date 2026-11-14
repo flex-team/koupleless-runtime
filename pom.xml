@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <revision>2.1.12-flex.boot4.2</revision>
+        <revision>2.1.12-flex.boot4.3</revision>
         <sofa.ark.version>3.2.1-flex.boot4.1</sofa.ark.version>
         <koupleless.runtime.version>${revision}</koupleless.runtime.version>
         <spring.boot.version>4.0.4</spring.boot.version>
