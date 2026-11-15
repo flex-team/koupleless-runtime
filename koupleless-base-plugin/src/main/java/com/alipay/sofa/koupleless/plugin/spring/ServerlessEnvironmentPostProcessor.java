@@ -219,8 +219,6 @@ public class ServerlessEnvironmentPostProcessor implements EnvironmentPostProces
 
     private void registerMasterBizPropertySource(ConfigurableEnvironment bizEnv) {
         MutablePropertySources propertySources = bizEnv.getPropertySources();
-        MasterBizDefaultPropertiesEnvironmentPostProcessor
-            .restoreDefaultProperties(propertySources);
         propertySources.remove(MASTER_BIZ_PROPERTIES_PROPERTY_SOURCE_NAME);
         propertySources.addLast(createMasterBizPropertySource());
         getLogger().info("register master biz property source to biz, shareKeys: {}",

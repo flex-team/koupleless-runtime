@@ -29,6 +29,7 @@ import org.junit.rules.TemporaryFolder;
 import org.springframework.boot.EnvironmentPostProcessor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.bootstrap.DefaultBootstrapContext;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
 import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.boot.logging.DeferredLogs;
 import org.springframework.boot.support.EnvironmentPostProcessorsFactory;
@@ -118,13 +119,13 @@ public class MasterBizSharedKeysConfigDataTest {
     }
 
     @Test
-    public void moduleConfigWinsOverASharedKeyWhileResolvingAnImport() throws Exception {
+    public void sharedKeyWinsOverTheModuleConfigWhileResolvingAnImportButNotAfterwards() throws Exception {
         write("application.properties",
             "env=module-env\nspring.config.import=file:" + probe() + "\n");
 
         ConfigurableEnvironment environment = prepareModuleEnvironment(null, new HashMap<>());
 
-        Assert.assertEquals("module-env", environment.getProperty("probe.loaded"));
+        Assert.assertEquals("base-env", environment.getProperty("probe.loaded"));
         Assert.assertEquals("module-env", environment.getProperty("env"));
     }
 
@@ -164,7 +165,7 @@ public class MasterBizSharedKeysConfigDataTest {
     }
 
     @Test
-    public void sharedSourceIsTheOnlyAddedSourceWhenTheModuleHasNoDefaultProperties() throws Exception {
+    public void sharedSourceIsAddedOnceAfterTheModuleConfig() throws Exception {
         write("application.properties", "spring.config.import=file:" + probe() + "\n");
 
         ConfigurableEnvironment environment = prepareModuleEnvironment(null, new HashMap<>());
@@ -192,6 +193,7 @@ public class MasterBizSharedKeysConfigDataTest {
         if (defaultProperties != null) {
             environment.getPropertySources().addLast(defaultProperties);
         }
+        ConfigurationPropertySources.attach(environment);
         SpringApplication application = new SpringApplication();
         List<EnvironmentPostProcessor> postProcessors = EnvironmentPostProcessorsFactory
             .fromSpringFactories(Thread.currentThread().getContextClassLoader())
