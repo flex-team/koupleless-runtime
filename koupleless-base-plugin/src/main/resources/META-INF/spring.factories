@@ -5,6 +5,7 @@ org.springframework.context.ApplicationListener=\
   com.alipay.sofa.koupleless.plugin.manager.listener.StaticBatchInstallEventListener,\
   com.alipay.sofa.koupleless.plugin.spring.SkipInitializerListener
 org.springframework.boot.env.EnvironmentPostProcessor=\
+  com.alipay.sofa.koupleless.plugin.spring.MasterBizDefaultPropertiesEnvironmentPostProcessor,\
   com.alipay.sofa.koupleless.plugin.spring.ServerlessEnvironmentPostProcessor
 
 # Auto Configuration Import Filters
