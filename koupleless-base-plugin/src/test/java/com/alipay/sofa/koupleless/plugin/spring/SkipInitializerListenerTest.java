@@ -98,7 +98,7 @@ public class SkipInitializerListenerTest {
                 // skip exception
             }
 
-            assertEquals(beforeSkipInitializerSize - 4, springApplication.getInitializers().size());
+            assertEquals(beforeSkipInitializerSize - 3, springApplication.getInitializers().size());
         } finally {
             Thread.currentThread().setContextClassLoader(oldClassLoader);
         }

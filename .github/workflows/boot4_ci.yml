@@ -1,0 +1,34 @@
+name: boot4-ci
+on:
+  push:
+    branches: [flex/boot4]
+  pull_request:
+    branches: [flex/boot4, runtime-2.1.x]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        spring-boot: ["4.0.4", "4.1.0"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/sofa-ark
+          ref: flex/boot4
+          path: sofa-ark
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "21"
+          cache: maven
+      - name: sofa-ark
+        run: SKIP_TESTS=1 ./sofa-ark/build.sh -Dspring.boot.version=${{ matrix.spring-boot }}
+      - name: build
+        run: ./build.sh -Dspring.boot.version=${{ matrix.spring-boot }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: surefire-${{ matrix.spring-boot }}
+          path: "**/target/surefire-reports/"

@@ -17,7 +17,7 @@
 package com.alipay.sofa.koupleless.plugin.spring;
 
 import org.junit.Test;
-import org.springframework.boot.ConfigurableBootstrapContext;
+import org.springframework.boot.bootstrap.ConfigurableBootstrapContext;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.context.event.ApplicationStartingEvent;
 

@@ -20,6 +20,7 @@ import com.alipay.sofa.ark.spi.constant.Constants;
 import com.alipay.sofa.koupleless.arklet.core.common.model.BatchInstallRequest;
 import com.alipay.sofa.koupleless.arklet.core.common.model.InstallRequest;
 import com.alipay.sofa.koupleless.arklet.core.ops.BatchInstallHelper;
+import com.alipay.sofa.koupleless.arklet.core.ops.StaticBizArgsProvider;
 import com.alipay.sofa.koupleless.common.util.OSUtils;
 
 import java.util.ArrayList;
@@ -46,19 +47,22 @@ public class BatchInstallBizInDirAbsolutePathStrategy implements BatchInstallStr
             Integer order = entry.getKey();
             for (String bizUrl : entry.getValue()) {
                 result.putIfAbsent(order, new ArrayList<>());
-                result.get(order).add(buildInstallRequest(bizUrl));
+                result.get(order).add(buildInstallRequest(bizUrl, request.getBizArgsProvider()));
             }
         }
         return result;
     }
 
-    private InstallRequest buildInstallRequest(String bizAbsolutePath) {
+    private InstallRequest buildInstallRequest(String bizAbsolutePath,
+                                               StaticBizArgsProvider bizArgsProvider) {
         String bizUrl = OSUtils.getLocalFileProtocolPrefix() + bizAbsolutePath;
         Map<String, Object> mainAttributes = BatchInstallHelper.getMainAttributes(bizAbsolutePath);
         String bizName = (String) mainAttributes.get(Constants.ARK_BIZ_NAME);
         String bizVersion = (String) mainAttributes.get(Constants.ARK_BIZ_VERSION);
+        String[] args = bizArgsProvider == null ? null
+            : bizArgsProvider.getArgs(bizName, bizVersion, bizAbsolutePath);
 
         return InstallRequest.builder().bizUrl(bizUrl).bizName(bizName).bizVersion(bizVersion)
-            .installStrategy(installStrategy).build();
+            .args(args).installStrategy(installStrategy).build();
     }
 }

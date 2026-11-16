@@ -136,4 +136,9 @@ public class MockBizManagerService implements BizManagerService {
     public ConcurrentHashMap<String, ConcurrentHashMap<String, Biz>> getBizRegistration() {
         return null;
     }
+
+    @Override
+    public java.util.concurrent.locks.ReentrantLock getBizLock(String bizName) {
+        return new java.util.concurrent.locks.ReentrantLock();
+    }
 }

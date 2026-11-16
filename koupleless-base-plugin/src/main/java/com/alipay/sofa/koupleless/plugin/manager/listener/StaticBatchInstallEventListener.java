@@ -23,6 +23,7 @@ import com.alipay.sofa.koupleless.arklet.core.ArkletComponentRegistry;
 import com.alipay.sofa.koupleless.common.log.ArkletLoggerFactory;
 import com.alipay.sofa.koupleless.arklet.core.common.model.BatchInstallRequest;
 import com.alipay.sofa.koupleless.arklet.core.common.model.BatchInstallResponse;
+import com.alipay.sofa.koupleless.arklet.core.ops.StaticBizArgsProvider;
 import com.alipay.sofa.koupleless.arklet.core.ops.UnifiedOperationService;
 import com.alipay.sofa.koupleless.common.util.ArkUtils;
 import com.google.common.base.Preconditions;
@@ -47,8 +48,17 @@ public class StaticBatchInstallEventListener implements ApplicationListener<Appl
     /**
      * <p>batchDeployFromLocalDir.</p>
      */
-    @SneakyThrows
     public void batchDeployFromLocalDir() {
+        batchDeployFromLocalDir(null);
+    }
+
+    /**
+     * <p>batchDeployFromLocalDir.</p>
+     *
+     * @param bizArgsProvider program arguments of each biz, null for none
+     */
+    @SneakyThrows
+    public void batchDeployFromLocalDir(StaticBizArgsProvider bizArgsProvider) {
         String absolutePath = System.getProperty("com.alipay.sofa.ark.static.biz.dir");
         if (StringUtils.isEmpty(absolutePath) || isBatchDeployed.get()) {
             return;
@@ -59,7 +69,8 @@ public class StaticBatchInstallEventListener implements ApplicationListener<Appl
             .getOperationServiceInstance();
 
         BatchInstallResponse batchInstallResponse = operationServiceInstance
-            .batchInstall(BatchInstallRequest.builder().bizDirAbsolutePath(absolutePath).build());
+            .batchInstall(BatchInstallRequest.builder().bizDirAbsolutePath(absolutePath)
+                .bizArgsProvider(bizArgsProvider).build());
         for (Map.Entry<String, ClientResponse> entry : batchInstallResponse.getBizUrlToResponse()
             .entrySet()) {
             ArkletLoggerFactory.getDefaultLogger().info("{}, {}, {}, BatchDeployResult",
@@ -77,7 +88,8 @@ public class StaticBatchInstallEventListener implements ApplicationListener<Appl
         // 非基座应用直接跳过, 包括普通应用和模块
         if (ArkUtils.isMasterBiz()) {
             // 基座应用启动完成后，执行合并部署。
-            batchDeployFromLocalDir();
+            batchDeployFromLocalDir(event.getApplicationContext()
+                .getBeanProvider(StaticBizArgsProvider.class).getIfAvailable());
         }
     }
 }

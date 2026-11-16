@@ -78,7 +78,14 @@ public class ForceStopThreadsOnUninstallEventHandler implements
             threads.size(), event.getSource().getBizName());
         for (Thread thread : threads) {
             // 强制 stop 模块创建的线程,会导致线程持有的锁被强制释放,可能触发其它等待该锁的线程被异常唤醒继续执行,进而导致一些非预期行为,请谨慎使用
-            thread.stop();
+            try {
+                thread.stop();
+            } catch (UnsupportedOperationException e) {
+                LOGGER.warn(
+                    "[ForceStopThreadsOnUninstallEventHandler] Thread.stop is not supported on this JVM, interrupting thread {} instead",
+                    thread.getName());
+                thread.interrupt();
+            }
         }
     }
 

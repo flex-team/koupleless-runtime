@@ -19,8 +19,8 @@ package com.alipay.sofa.koupleless.arklet.springboot.starter.health;
 import com.alipay.sofa.koupleless.arklet.core.monitor.MetricsMonitor;
 import com.alipay.sofa.koupleless.arklet.core.monitor.model.ClientMetrics;
 import com.alipay.sofa.koupleless.arklet.springboot.starter.properties.ArkletProperties.MonitorProperties;
-import org.springframework.boot.actuate.health.AbstractHealthIndicator;
-import org.springframework.boot.actuate.health.Health.Builder;
+import org.springframework.boot.health.contributor.AbstractHealthIndicator;
+import org.springframework.boot.health.contributor.Health.Builder;
 
 import static com.alipay.sofa.koupleless.arklet.core.monitor.MetricsMonitor.validateMetaspace;
 

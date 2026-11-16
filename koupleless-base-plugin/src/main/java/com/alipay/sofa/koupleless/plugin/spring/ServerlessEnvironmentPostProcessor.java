@@ -104,8 +104,7 @@ public class ServerlessEnvironmentPostProcessor implements EnvironmentPostProces
             return;
         }
         // 模块
-        if (ArkClient.getMasterBiz().getBizClassLoader() != Thread.currentThread()
-            .getContextClassLoader()) {
+        if (isBizEnvironment()) {
             // 禁用模块 spring.config.location 和 spring.config.additional-location
             String configLocation = System.getProperty(SPRING_CONFIG_LOCATION);
             String additionalLocation = System.getProperty(SPRING_ADDITIONAL_LOCATION);
@@ -143,7 +142,7 @@ public class ServerlessEnvironmentPostProcessor implements EnvironmentPostProces
             }
 
             // 添加基座共享的 environment
-            registerMasterBizPropertySource(MASTER_ENV.get(), environment);
+            registerMasterBizPropertySource(environment);
         }
     }
 
@@ -218,16 +217,25 @@ public class ServerlessEnvironmentPostProcessor implements EnvironmentPostProces
         }
     }
 
-    private void registerMasterBizPropertySource(Environment masterEnv,
-                                                 ConfigurableEnvironment bizEnv) {
+    private void registerMasterBizPropertySource(ConfigurableEnvironment bizEnv) {
+        MutablePropertySources propertySources = bizEnv.getPropertySources();
+        propertySources.remove(MASTER_BIZ_PROPERTIES_PROPERTY_SOURCE_NAME);
+        propertySources.addLast(createMasterBizPropertySource());
+        getLogger().info("register master biz property source to biz, shareKeys: {}",
+            BASE_APP_SHARE_ENV_KEYS);
+    }
+
+    static boolean isBizEnvironment() {
+        Biz masterBiz = ArkClient.getMasterBiz();
+        return masterBiz != null
+               && masterBiz.getBizClassLoader() != Thread.currentThread().getContextClassLoader();
+    }
+
+    static MasterBizPropertySource createMasterBizPropertySource() {
+        Environment masterEnv = MASTER_ENV.get();
         //Master Biz 创建 MasterBizPropertySource 时基座已经安装完成，必然不为 null
         Assert.notNull(masterEnv, "Master biz environment is null");
-
-        //构建 MasterBizPropertySource，注册到 environment 中
-        MasterBizPropertySource masterBizPropertySource = new MasterBizPropertySource(
-            MASTER_BIZ_PROPERTIES_PROPERTY_SOURCE_NAME, masterEnv, BASE_APP_SHARE_ENV_KEYS);
-        bizEnv.getPropertySources().addLast(masterBizPropertySource);
-        getLogger().info("register master biz property source to biz, shareKeys: {}",
+        return new MasterBizPropertySource(MASTER_BIZ_PROPERTIES_PROPERTY_SOURCE_NAME, masterEnv,
             BASE_APP_SHARE_ENV_KEYS);
     }
 
